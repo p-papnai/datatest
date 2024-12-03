@@ -1,10 +1,15 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/index.js", "use": "@vercel/node" }
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node"
+    }
   ],
   "routes": [
-    { "src": "/fetch-boards", "dest": "/api/index.js" },
-    { "src": "/save-product", "dest": "/api/index.js" }
+    {
+      "src": "/api/fetch-boards",
+      "dest": "/api/index.js"
+    }
   ]
 }
