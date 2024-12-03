@@ -8,7 +8,7 @@ import {
     getDocs,
     addDoc,
     doc,
-    updateDoc, // Add this l
+    updateDoc,
 } from 'firebase/firestore';
 import cors from 'cors';
 
@@ -40,7 +40,6 @@ server.post('/fetch-boards', async (req, res) => {
     }
 
     try {
-        // Step 1: Fetch boards by ownerId
         const boardsCollection = collection(db, 'boards');
         const boardsQuery = query(boardsCollection, where('ownerId', '==', ownerId));
         const boardsSnapshot = await getDocs(boardsQuery);
@@ -51,22 +50,19 @@ server.post('/fetch-boards', async (req, res) => {
 
         const response = [];
 
-        // Step 2: Iterate over each board
         for (const boardDoc of boardsSnapshot.docs) {
             const boardData = boardDoc.data();
             const boardId = boardDoc.id;
             const boardName = boardData.name || "Unknown";
-        
-            // Fetch products for the current board
+
             const productsCollection = collection(db, 'products');
             const productsQuery = query(productsCollection, where('boardId', '==', boardId));
             const productsSnapshot = await getDocs(productsQuery);
-        
+
             const productDetails = [];
             productsSnapshot.forEach((productDoc) => {
                 const productData = productDoc.data();
                 
-                // Extract product details
                 const productId = productData.productId || "Unknown Product ID";
                 const title = productData.title || "Unnamed Product";
                 const descriptions = productData.descriptions || [];
@@ -75,7 +71,6 @@ server.post('/fetch-boards', async (req, res) => {
                 const videoLinks = productData.videoLinks || [];
                 const voiceRecordings = productData.voiceRecordings || [];
         
-                // Push product details to the array
                 productDetails.push({
                     productId,
                     title,
@@ -86,29 +81,19 @@ server.post('/fetch-boards', async (req, res) => {
                     voiceRecordings
                 });
             });
-        
-            // Step 3: Add the board and its products to the response
+
             response.push({
                 boardName,
-                products: productDetails,  // Include product details including productId
+                products: productDetails,
             });
         }
 
-        // Send the response
         res.status(200).json({ data: response });
     } catch (error) {
         console.error("Error fetching boards and products:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
-
-
-
-
-
-
-
-
 
 server.post('/save-product', async (req, res) => {
     const { productId, ownerId, linkType, savedLinks } = req.body;
@@ -127,39 +112,25 @@ server.post('/save-product', async (req, res) => {
         const productDoc = productSnapshot.docs[0];
         const productDocRef = doc(db, 'products', productDoc.id);
   
-        // Fetch the existing document
         const existingData = productDoc.data();
   
         for (const link of savedLinks) {
           switch (link.type) {
             case 'video-link':
-              console.log("video-link running")
-                // Ensure videoLinks is an array
                 const existingVideoLinks = Array.isArray(existingData.videoLinks) ? existingData.videoLinks : [];
-            
-                // Check if the link already exists
                 if (!existingVideoLinks.includes(link.url)) {
                     existingVideoLinks.push(link.url);
                     await updateDoc(productDocRef, { videoLinks: existingVideoLinks, updatedAt: new Date() });
                 }
                 break;
-            
-  
             case 'photo-link':
-
-            console.log("photo-link running")
-              // Add to `images` array
               const existingImages = existingData.images || [];
               if (!existingImages.includes(link.url)) {
                 existingImages.push(link.url);
                 await updateDoc(productDocRef, { images: existingImages, updatedAt: new Date() });
               }
               break;
-  
             case 'capture-page-link':
-
-            console.log("capture-link running")
-              // Add to `pageCaptures` object
               const pageCaptures = existingData.pageCaptures || {};
               if (!pageCaptures[link.url]) {
                 pageCaptures[link.url] = {
@@ -171,20 +142,16 @@ server.post('/save-product', async (req, res) => {
                 await updateDoc(productDocRef, { pageCaptures, updatedAt: new Date() });
               }
               break;
-  
             case 'aliexpress-link':
             case 'alibaba-link':
             case '1688-link':
             case 'amazon-link':
-              // Add to `marketplaceLinks` object
-
-              console.log("marketplace-link running")
               const marketplaceLinks = existingData.marketplaceLinks || {};
-              const marketplace = link.type.replace('-link', ''); // Extract marketplace name
+              const marketplace = link.type.replace('-link', '');
               if (!marketplaceLinks[link.url]) {
                 marketplaceLinks[link.url] = {
                   url: link.url,
-                  marketplace:marketplace||"marketplace",
+                  marketplace: marketplace || "marketplace",
                   title: link.type,
                   createdAt: new Date(),
                   updatedAt: new Date(),
@@ -192,7 +159,6 @@ server.post('/save-product', async (req, res) => {
                 await updateDoc(productDocRef, { marketplaceLinks, updatedAt: new Date() });
               }
               break;
-  
             default:
               console.log(`Unhandled link type: ${link.type}`);
           }
@@ -200,7 +166,6 @@ server.post('/save-product', async (req, res) => {
   
         return res.status(200).json({ message: "Links updated successfully" });
       } else {
-        // Create a new product document if it doesn't exist
         const newProductData = {
           productId,
           ownerId,
@@ -253,16 +218,8 @@ server.post('/save-product', async (req, res) => {
       console.error("Error saving product:", error);
       return res.status(500).json({ error: "Internal Server Error" });
     }
-  });
-  
-  
-  
-  
-
-// Start the server
-const PORT = 3000;
-server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-export default server
+export function handler(req, res) {
+  return server(req, res); // Use the Express app to handle the request
+}
