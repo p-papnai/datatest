@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fetch Boards</title>
+</head>
+<body>
+    <h1>Fetch Boards by Owner ID</h1>
+    <form id="fetchForm">
+        <label for="ownerId">Owner ID:</label>
+        <input type="text" id="ownerId" name="ownerId" placeholder="Enter Owner ID" required />
+        <button type="submit">Fetch Boards</button>
+    </form>
+
+    <div id="results"></div>
+
+    <script>
+        // Handle form submission
+        document.getElementById('fetchForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            // Get the ownerId from input
+            const ownerId = document.getElementById('ownerId').value;
+            
+            // Make a POST request to fetch boards
+            try {
+                const response = await fetch('http://localhost:3000/fetch-boards', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ ownerId })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch boards');
+                }
+
+                const data = await response.json();
+
+                // Display the results
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = ''; // Clear previous results
+
+                if (data.boards && data.boards.length > 0) {
+                    data.boards.forEach(board => {
+                        const boardDiv = document.createElement('div');
+                        const boardName = document.createElement('h3');
+                        boardName.textContent = `Board Name: ${board.name}`;
+                        boardDiv.appendChild(boardName);
+                        resultsDiv.appendChild(boardDiv);
+                    });
+                } else {
+                    resultsDiv.textContent = 'No boards found for this owner ID.';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('There was an error fetching the boards.');
+            }
+        });
+    </script>
+</body>
+</html>
